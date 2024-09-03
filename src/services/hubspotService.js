@@ -22,9 +22,10 @@ const endpointConfig = {
 
 const fetchDataFromHubSpot = async () => {
     try {
-        let results = [];
+        const allData = {};
 
-        for (const [endpoint, url] of Object.entries(endpointConfig)) {
+        for (const [objectType, url] of Object.entries(endpointConfig)) {
+            let results = [];
             let hasMore = true;
             let after = undefined;
 
@@ -35,19 +36,23 @@ const fetchDataFromHubSpot = async () => {
                         'Content-Type': 'application/json'
                     },
                     params: {
-                        after: after
+                        after: after,
                     }
                 });
 
-                results = results.concat(response.data.results || []);
+                const fetchedData = response.data.results || [];
+                results = results.concat(fetchedData);
+
                 hasMore = response.data.paging && response.data.paging.next;
                 after = hasMore ? response.data.paging.next.after : undefined;
             }
+
+            allData[objectType] = results.map(item => ({
+                properties: item.properties || {}
+            }));
         }
 
-        return results.map(item => ({
-            properties: item.properties || {}
-        }));
+        return allData;
     } catch (error) {
         console.error('Error fetching data from HubSpot:', error.response ? error.response.data : error.message);
         throw error;
